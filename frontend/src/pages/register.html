@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register</title>
+  <link rel="stylesheet" href="styles/register.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>Register</h2>
+    <form id="registerForm">
+      <input type="text" id="regUsername" name="username" placeholder="Username" required />
+      <input type="email" id="regEmail" name="email" placeholder="Email" required />
+      <input type="password" id="regPassword" name="password" placeholder="Password" required />
+      <button type="submit">Register</button>
+    </form>
+
+    <div class="login-link" style="margin-top: 15px;">
+      Already have an account? 
+      <a href="login.html" class="login-link-text">Login</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('Register logic not implemented yet.');
+      // Your register logic here
+    });
+  </script>
+</body>
+</html>

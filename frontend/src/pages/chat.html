@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat</title>
+  <link rel="stylesheet" href="styles/chat.css" />
+</head>
+<body>
+  <div class="chat-container">
+    <!-- Sidebar with user info and contacts -->
+    <div class="sidebar">
+      <div class="user-info" id="userInfo">
+        <div class="avatar">U</div>
+        <div class="username">Username</div>
+
+        <!-- Account Settings Panel -->
+        <div id="accountSettingsPanel">
+          <button id="editProfileBtn">Edit Profile</button>
+          <button id="changePasswordBtn">Change Password</button>
+          <button id="logoutBtn">Logout</button>
+          <button id="deleteAccountBtn" class="danger">Delete Account</button>
+        </div>
+      </div>
+
+      <input type="text" id="userSearch" placeholder="Search users..." autocomplete="off" />
+
+      <div class="contacts" id="contactsList">
+        <div class="contact-item active">Friend 1</div>
+        <div class="contact-item">Friend 2</div>
+        <div class="contact-item">Friend 3</div>
+      </div>
+    </div>
+
+    <!-- Main chat panel -->
+    <div class="chat-panel">
+      <div class="chat-header" id="chatHeader">Friend 1</div>
+      <div class="messages" id="messages">
+        <!-- messages will be rendered here -->
+      </div>
+      <form class="input-area" id="messageForm">
+        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" required />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="scripts/account.js"></script>
+  <script>
+    // Chat app main JS (inline for simplicity here)
+
+    const chatData = {
+      "Friend 1": [
+        { text: "Hello! How are you?", type: "received", timestamp: "10:00 AM" },
+        { text: "I'm good, thanks! You?", type: "sent", timestamp: "10:01 AM" }
+      ],
+      "Friend 2": [],
+      "Friend 3": []
+    };
+
+    const contactsList = document.getElementById('contactsList');
+    const contacts = contactsList.getElementsByClassName('contact-item');
+    const chatHeader = document.getElementById('chatHeader');
+    const messages = document.getElementById('messages');
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const userSearch = document.getElementById('userSearch');
+
+    let activeContact = 'Friend 1';
+
+    function renderMessages(contactName) {
+      messages.innerHTML = '';
+      const msgs = chatData[contactName] || [];
+      msgs.forEach(msg => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${msg.type}`;
+        msgDiv.innerHTML = `${msg.text}<div class="message-timestamp">${msg.timestamp}</div>`;
+        messages.appendChild(msgDiv);
+      });
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    renderMessages(activeContact);
+
+    Array.from(contacts).forEach(contact => {
+      contact.addEventListener('click', () => {
+        Array.from(contacts).forEach(c => c.classList.remove('active'));
+        contact.classList.add('active');
+        activeContact = contact.textContent;
+        chatHeader.textContent = activeContact;
+        renderMessages(activeContact);
+      });
+    });
+
+    messageForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const msgText = messageInput.value.trim();
+      if (!msgText) return;
+
+      const newMsg = {
+        text: msgText,
+        type: 'sent',
+        timestamp: 'Now'
+      };
+
+      if (!chatData[activeContact]) chatData[activeContact] = [];
+      chatData[activeContact].push(newMsg);
+
+      renderMessages(activeContact);
+      messageInput.value = '';
+    });
+
+    userSearch.addEventListener('input', () => {
+      const filter = userSearch.value.toLowerCase();
+      for (let i = 0; i < contacts.length; i++) {
+        const contactName = contacts[i].textContent.toLowerCase();
+        contacts[i].style.display = contactName.includes(filter) ? '' : 'none';
+      }
+    });
+  </script>
+</body>
+</html>

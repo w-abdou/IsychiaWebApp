@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Management</title>
+    <link rel="stylesheet" href="styles/account.css">
+</head>
+<body>
+    <div class="container">
+        <!-- User Profile Section -->
+        <div class="profile-section">
+            <div class="user-header">
+                <div class="avatar">U</div>
+                <h2>Account Settings</h2>
+            </div>
+
+            <!-- Profile Information -->
+            <div class="section" id="profileSection">
+                <h3>Profile Information</h3>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" placeholder="Enter your username">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email">
+                    </div>
+                    <button type="submit" class="btn-primary">Update Profile</button>
+                </form>
+            </div>
+          
+            <!-- Password Change -->
+            <div class="section" id="passwordSection">
+                <h3>Change Password</h3>
+                <form id="passwordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" name="currentPassword" placeholder="Enter current password">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm new password">
+                    </div>
+                    <button type="submit" class="btn-primary">Change Password</button>
+                </form>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="section" id="accountActions">
+                <h3>Account Actions</h3>
+                <div class="action-buttons">
+                    <button id="logoutBtn" class="btn-secondary">Logout</button>
+                    <button id="deleteAccountBtn" class="btn-danger">Delete Account</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Account Modal -->
+        <div id="deleteModal" class="modal">
+            <div class="modal-content">
+                <h3>Delete Account</h3>
+                <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                <form id="deleteAccountForm">
+                    <div class="form-group">
+                        <label for="deletePassword">Enter your password to confirm</label>
+                        <input type="password" id="deletePassword" name="deletePassword" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancelDelete">Cancel</button>
+                        <button type="submit" class="btn-danger">Delete Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Profile Form Handler
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            
+            // Add your profile update logic here
+            console.log('Profile update:', { username, email });
+        });
+
+        // Password Form Handler
+        document.getElementById('passwordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match!');
+                return;
+            }
+
+            // Add your password change logic here
+            console.log('Password change:', { currentPassword, newPassword });
+        });
+
+        // Logout Handler
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            // Add your logout logic here
+            console.log('Logging out...');
+        });
+
+        // Delete Account Modal Handlers
+        const deleteModal = document.getElementById('deleteModal');
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+        const cancelDelete = document.getElementById('cancelDelete');
+
+        deleteAccountBtn.addEventListener('click', function() {
+            deleteModal.style.display = 'flex';
+        });
+
+        cancelDelete.addEventListener('click', function() {
+            deleteModal.style.display = 'none';
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target === deleteModal) {
+                deleteModal.style.display = 'none';
+            }
+        });
+
+        // Delete Account Form Handler
+        document.getElementById('deleteAccountForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const password = document.getElementById('deletePassword').value;
+            
+            // Add your account deletion logic here
+            console.log('Account deletion:', { password });
+        });
+    </script>
+</body>
+</html> 

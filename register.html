@@ -9,7 +9,7 @@
 <body>
   <div class="container">
     <h2>Register</h2>
-    <form id="registerForm">
+    <form id="registerForm" action="register.php" method="post">
       <input type="text" id="regUsername" name="username" placeholder="Username" required />
       <input type="email" id="regEmail" name="email" placeholder="Email" required />
       <input type="password" id="regPassword" name="password" placeholder="Password" required />
@@ -23,11 +23,28 @@
   </div>
 
   <script>
-    document.getElementById('registerForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      alert('Register logic not implemented yet.');
-      // Your register logic here
-    });
-  </script>
+  document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Get form data
+    const form = e.target;
+    const formData = new FormData(form);
+
+    // Send POST request using fetch
+    try {
+      const response = await fetch('backend/register.php', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.text();
+      alert(result); // Show the response from PHP
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Something went wrong.');
+    }
+  });
+</script>
+
 </body>
 </html>

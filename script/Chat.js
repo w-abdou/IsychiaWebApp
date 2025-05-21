@@ -119,6 +119,111 @@ function renderMessages(contact) {
   messages.scrollTop = messages.scrollHeight;
 }
 
+// Load friends from backend and add dummy messages for each friend
+function loadFriends() {
+  // First get current user ID
+  fetch('backend/getCurrentUser.php')
+    .then(response => response.json())
+    .then(userData => {
+      if (!userData.success) {
+        // Not logged in, redirect to login
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // Now fetch friends using the user's ID
+      return fetch(`backend/get_friends.php?user_id=${userData.user_id}`)
+        .then(response => response.json())
+        .then(data => {
+          contactsList.innerHTML = '';
+          
+          // Check if friends property exists and has items
+          const friends = data.friends || [];
+          
+          if (friends.length === 0) {
+            contactsList.innerHTML = '<div class="contact-item">No friends found</div>';
+            return;
+          }
+
+          friends.forEach(friend => {
+            const contactDiv = document.createElement('div');
+            contactDiv.className = 'contact-item';
+            contactDiv.textContent = friend.username;
+            contactDiv.dataset.id = friend.id;
+
+            contactDiv.addEventListener('click', () => {
+              document.querySelectorAll('.contact-item').forEach(c => c.classList.remove('active'));
+              contactDiv.classList.add('active');
+              activeContact = friend.username;
+              chatHeader.textContent = activeContact;
+              renderMessages(activeContact);
+            });
+
+            contactsList.appendChild(contactDiv);
+
+            // Initialize chat data with dummy messages for this friend
+            chatData[friend.username] = [
+              {
+                text: "Hey, this is a dummy received message.",
+                type: "received",
+                timestamp: "10:00 AM"
+              },
+              {
+                text: "Hi! Thanks for your message.",
+                type: "sent",
+                timestamp: "10:01 AM"
+              },
+              {
+                text: "How are you doing today?",
+                type: "received",
+                timestamp: "10:02 AM"
+              }
+            ];
+          });
+        });
+    })
+    .catch(error => {
+      console.error('Error loading friends:', error);
+    });
+}
+
+// Send message handler
+messageForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const msgText = messageInput.value.trim();
+  if (!msgText || !activeContact) return;
+
+  const newMsg = {
+    text: msgText,
+    type: 'sent',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  if (!chatData[activeContact]) chatData[activeContact] = [];
+  chatData[activeContact].push(newMsg);
+  renderMessages(activeContact);
+  messageInput.value = '';
+
+  // Send message to backend - fixed path and filename
+  fetch('backend/send_messages.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      receiver: activeContact,
+      message: msgText
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (!data.success) {
+      console.error('Message send failed:', data.error);
+      // Optionally show an error toast instead of an alert
+    }
+  })
+  .catch(error => {
+    console.error('Error sending message:', error);
+  });
+});
 // Filter contacts based on search
 userSearch.addEventListener('input', () => {
   const filter = userSearch.value.toLowerCase();

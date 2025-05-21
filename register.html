@@ -26,11 +26,9 @@
   document.getElementById('registerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Get form data
     const form = e.target;
     const formData = new FormData(form);
 
-    // Send POST request using fetch
     try {
       const response = await fetch('backend/register.php', {
         method: 'POST',
@@ -38,7 +36,7 @@
       });
 
       const result = await response.text();
-      alert(result); // Show the response from PHP
+      alert(result); 
     } catch (error) {
       console.error('Error:', error);
       alert('Something went wrong.');

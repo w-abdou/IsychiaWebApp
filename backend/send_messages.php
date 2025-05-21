@@ -1,7 +1,6 @@
 <?php
 session_start();
 require 'db.php';
-require 'functions.php';
 
 if (!isset($_SESSION['user_id'])) {
   http_response_code(401);
@@ -15,8 +14,6 @@ $sender_id = $_SESSION['user_id'];
 $receiver_username = $data['receiver'];
 $message = $data['message'];
 
-echo json_encode(['sender_id' => $sender_id, 'receiver_username' => $receiver_username, 'message' => $message]);
-
 // Get receiver ID
 $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
 $stmt->bind_param("s", $receiver_username);
@@ -29,10 +26,15 @@ if ($result->num_rows === 0) {
 $receiver = $result->fetch_assoc();
 $receiver_id = $receiver['id'];
 
-// Insert message
-$stmt = $conn->prepare("INSERT INTO messages (sender_id, receiver_id, message_text) VALUES (?, ?, ?)");
+// Insert message - note the column names match the database schema
+$stmt = $conn->prepare("INSERT INTO messages (senderID, receiverID, message_text) VALUES (?, ?, ?)");
 $stmt->bind_param("iis", $sender_id, $receiver_id, $message);
-$stmt->execute();
 
-echo json_encode(['success' => true]);
+if ($stmt->execute()) {
+  echo json_encode(['success' => true]);
+} else {
+  echo json_encode(['success' => false, 'error' => $conn->error]);
+}
+
+$conn->close();
 ?>

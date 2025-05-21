@@ -30,16 +30,16 @@ if ($result->num_rows === 0) {
 
 $contact_id = $result->fetch_assoc()['id'];
 
-// Get messages between current user and contact
+// Get messages between current user and contact - note column names match the DB schema
 $stmt = $conn->prepare("
-    SELECT m.id, m.sender_id, m.receiver_id, m.message_text, m.timestamp, 
+    SELECT m.id, m.senderID, m.receiverID, m.message_text, m.sent_at as timestamp, 
            u_sender.username as sender_username, u_receiver.username as receiver_username
     FROM messages m
-    JOIN users u_sender ON m.sender_id = u_sender.id
-    JOIN users u_receiver ON m.receiver_id = u_receiver.id
-    WHERE (m.sender_id = ? AND m.receiver_id = ?) 
-       OR (m.sender_id = ? AND m.receiver_id = ?)
-    ORDER BY m.timestamp ASC
+    JOIN users u_sender ON m.senderID = u_sender.id
+    JOIN users u_receiver ON m.receiverID = u_receiver.id
+    WHERE (m.senderID = ? AND m.receiverID = ?) 
+       OR (m.senderID = ? AND m.receiverID = ?)
+    ORDER BY m.sent_at ASC
 ");
 
 $stmt->bind_param("iiii", $user_id, $contact_id, $contact_id, $user_id);
@@ -49,7 +49,7 @@ $result = $stmt->get_result();
 $messages = array();
 while ($row = $result->fetch_assoc()) {
     // Format messages for the client
-    $type = ($row['sender_id'] == $user_id) ? 'sent' : 'received';
+    $type = ($row['senderID'] == $user_id) ? 'sent' : 'received';
     
     // Format timestamp for display
     $timestamp = date('g:i A', strtotime($row['timestamp']));

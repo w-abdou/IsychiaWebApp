@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Management</title>
+    <title>Isychia Account Management</title>
     <link rel="stylesheet" href="styles/account.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <!-- User Profile Section -->
         <div class="profile-section">
             <div class="user-header">
-                <div class="avatar">U</div>
+                <div class="avatar" id="userInitials">U</div>
                 <h2>Account Settings</h2>
             </div>
 
@@ -81,66 +81,140 @@
     </div>
 
     <script>
-        // Profile Form Handler
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
+    // Load user data when the page loads
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            // Fetch user profile data
+            const res = await fetch('backend/getUserInfo.php');
+            const userData = await res.json();
             
-            // Add your profile update logic here
-            console.log('Profile update:', { username, email });
-        });
-
-        // Password Form Handler
-        document.getElementById('passwordForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (newPassword !== confirmPassword) {
-                alert('New passwords do not match!');
-                return;
+            if (userData.success) {
+                // Populate form fields
+                document.getElementById('username').value = userData.username || '';
+                document.getElementById('email').value = userData.email || '';
+                
+                // Set avatar initials
+                if (userData.username) {
+                    const initials = userData.username.charAt(0).toUpperCase();
+                    document.getElementById('userInitials').textContent = initials;
+                }
+            } else {
+                alert('Please log in to view your account settings.');
+                window.location.href = 'login.html';
             }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    });
 
-            // Add your password change logic here
-            console.log('Password change:', { currentPassword, newPassword });
+    // ✅ PROFILE FORM: Update Username & Email
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+
+        fetch('backend/update_profile.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `username=${encodeURIComponent(username)}&email=${encodeURIComponent(email)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Profile updated successfully!');
+            } else {
+                alert('Failed to update profile: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating profile.');
         });
+    });
 
-        // Logout Handler
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            // Add your logout logic here
-            console.log('Logging out...');
+    // ✅ PASSWORD FORM: Change Password
+    document.getElementById('passwordForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            alert('New passwords do not match!');
+            return;
+        }
+
+        fetch('backend/change_password.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `currentPassword=${encodeURIComponent(currentPassword)}&newPassword=${encodeURIComponent(newPassword)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Password changed successfully!');
+                document.getElementById('passwordForm').reset();
+            } else {
+                alert('Failed to change password: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error changing password.');
         });
+    });
 
-        // Delete Account Modal Handlers
-        const deleteModal = document.getElementById('deleteModal');
-        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-        const cancelDelete = document.getElementById('cancelDelete');
-
-        deleteAccountBtn.addEventListener('click', function() {
-            deleteModal.style.display = 'flex';
+    // ✅ LOGOUT HANDLER
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        fetch('backend/logout.php')
+        .then(() => {
+            window.location.href = 'login.html';
         });
+    });
 
-        cancelDelete.addEventListener('click', function() {
+    // ✅ DELETE ACCOUNT: Modal & Form Handler
+    const deleteModal = document.getElementById('deleteModal');
+    const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+    const cancelDelete = document.getElementById('cancelDelete');
+
+    deleteAccountBtn.addEventListener('click', function() {
+        deleteModal.style.display = 'flex';
+    });
+
+    cancelDelete.addEventListener('click', function() {
+        deleteModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', function(e) {
+        if (e.target === deleteModal) {
             deleteModal.style.display = 'none';
-        });
+        }
+    });
 
-        // Close modal when clicking outside
-        window.addEventListener('click', function(e) {
-            if (e.target === deleteModal) {
-                deleteModal.style.display = 'none';
+    document.getElementById('deleteAccountForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const password = document.getElementById('deletePassword').value;
+
+        fetch('backend/delete_account.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `deletePassword=${encodeURIComponent(password)}`
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Account deleted successfully!');
+                window.location.href = 'register.html';
+            } else {
+                alert('Failed to delete account: ' + data.message);
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting account.');
         });
+    });
+</script>
 
-        // Delete Account Form Handler
-        document.getElementById('deleteAccountForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const password = document.getElementById('deletePassword').value;
-            
-            // Add your account deletion logic here
-            console.log('Account deletion:', { password });
-        });
-    </script>
 </body>
-</html> 
+</html>

@@ -3,24 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chat</title>
+  <title>Isychia Chat</title>
   <link rel="stylesheet" href="styles/chat.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 </head>
 <body>
   <div class="chat-container">
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="user-info" id="userInfo">
-        <a href="accountsettings.html" class="avatar-button">
+        <a href="accountsettings.html" class="avatar-button" title="Account Settings">
           <div id="userInitials" class="avatar">U</div>
         </a>
         <div id="usernameDisplay" class="username">Username</div>
+        <a href="backend/logout.php" title="Logout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
       </div>
 
-      <input type="text" id="userSearch" placeholder="Search users..." autocomplete="off" />
+      <div class="search-container">
+        <input type="text" id="userSearch" placeholder="Search users..." autocomplete="off" />
+        <i class="fas fa-search search-icon"></i>
+      </div>
 
       <div class="contacts" id="contactsList">
         <!-- Friends will be loaded here dynamically -->
+        <div class="contacts-loading">
+          <i class="fas fa-circle-notch fa-spin"></i> Loading contacts...
+        </div>
       </div>
     </div>
 
@@ -28,11 +38,16 @@
     <div class="chat-panel">
       <div class="chat-header" id="chatHeader">Select a Friend</div>
       <div class="messages" id="messages">
-        <!-- Messages will be displayed here -->
+        <!-- Welcome message when no chat is selected -->
+        <div class="welcome-message">
+          <div class="welcome-icon"><i class="fas fa-comments"></i></div>
+          <h3>Welcome to Isychia Chat</h3>
+          <p>Select a contact to start messaging</p>
+        </div>
       </div>
       <form class="input-area" id="messageForm" method="post">
         <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" required name="messageInput"/>
-        <button type="submit">Send</button>
+        <button type="submit"><i class="fas fa-paper-plane"></i> Send</button>
       </form>
     </div>
   </div>
@@ -52,17 +67,54 @@
   function renderMessages(contactName) {
     messages.innerHTML = '';
     const msgs = chatData[contactName] || [];
+    
+    if (msgs.length === 0) {
+      messages.innerHTML = `
+        <div class="no-messages-notice">
+          <p>No messages yet. Start the conversation!</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Group messages by date
+    let currentDate = '';
+    
     msgs.forEach(msg => {
+      const messageDate = new Date(msg.timestamp);
+      const formattedDate = messageDate.toLocaleDateString();
+      
+      // Add date separator if this is a new day
+      if (formattedDate !== currentDate) {
+        currentDate = formattedDate;
+        const dateDiv = document.createElement('div');
+        dateDiv.className = 'date-separator';
+        dateDiv.innerHTML = `<span>${currentDate}</span>`;
+        messages.appendChild(dateDiv);
+      }
+      
       const msgDiv = document.createElement('div');
       msgDiv.className = `message ${msg.type}`;
-      msgDiv.innerHTML = `${msg.text}<div class="message-timestamp">${msg.timestamp}</div>`;
+      
+      // Add message content with better formatting
+      msgDiv.innerHTML = `
+        <div class="message-content">${msg.text}</div>
+        <div class="message-timestamp">
+          <i class="far fa-clock"></i> ${msg.timestamp}
+        </div>
+      `;
+      
       messages.appendChild(msgDiv);
     });
+    
     messages.scrollTop = messages.scrollHeight;
   }
 
   // Load message history for a specific contact
   function loadMessageHistory(contactName) {
+    // Show loading state
+    messages.innerHTML = '<div class="loading-messages"><i class="fas fa-circle-notch fa-spin"></i> Loading messages...</div>';
+    
     return fetch(`backend/get_messages.php?contact=${encodeURIComponent(contactName)}`)
       .then(response => {
         if (!response.ok) {
@@ -73,6 +125,7 @@
       .then(data => {
         if (data.error) {
           console.error('Error loading messages:', data.error);
+          messages.innerHTML = `<div class="error-notice">Could not load messages: ${data.error}</div>`;
           return [];
         }
         
@@ -82,12 +135,15 @@
       })
       .catch(error => {
         console.error('Error loading messages:', error);
+        messages.innerHTML = '<div class="error-notice">Failed to load messages. Please try again.</div>';
         return [];
       });
   }
 
   // Load friends from backend
   function loadFriends() {
+    contactsList.innerHTML = '<div class="loading-contacts"><i class="fas fa-circle-notch fa-spin"></i> Loading contacts...</div>';
+    
     fetch('backend/get_friends.php')
       .then(response => {
         if (!response.ok) {
@@ -98,8 +154,6 @@
       .then(data => {
         contactsList.innerHTML = '';
         
-        console.log('Friends data:', data);
-        
         // Check if data is an error object
         if (data && data.error) {
           console.error('Error loading friends:', data.error);
@@ -109,7 +163,11 @@
         
         // Check if data is empty or not an array
         if (!data || !Array.isArray(data) || data.length === 0) {
-          contactsList.innerHTML = '<div class="contact-item">No friends found</div>';
+          contactsList.innerHTML = `
+            <div class="no-contacts">
+              <i class="fas fa-user-friends"></i>
+              <p>No contacts found</p>
+            </div>`;
           return;
         }
 
@@ -117,7 +175,9 @@
         data.forEach(friend => {
           const contactDiv = document.createElement('div');
           contactDiv.className = 'contact-item';
-          contactDiv.textContent = friend.username;
+          contactDiv.innerHTML = `
+            <span class="contact-name">${friend.username}</span>
+          `;
           contactDiv.dataset.id = friend.id;
 
           contactDiv.addEventListener('click', () => {
@@ -125,6 +185,9 @@
             contactDiv.classList.add('active');
             activeContact = friend.username;
             chatHeader.textContent = activeContact;
+            
+            // Show loading indicator in the chat area
+            messages.innerHTML = '<div class="loading-messages"><i class="fas fa-circle-notch fa-spin"></i> Loading messages...</div>';
             
             // Load message history when selecting a contact
             loadMessageHistory(activeContact)
@@ -136,7 +199,12 @@
       })
       .catch(error => {
         console.error('Error loading friends:', error);
-        contactsList.innerHTML = '<div class="contact-item">Error loading contacts</div>';
+        contactsList.innerHTML = `
+          <div class="error-contacts">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Error loading contacts</p>
+            <button class="retry-btn" onclick="loadFriends()">Retry</button>
+          </div>`;
       });
   }
 
@@ -145,6 +213,12 @@
     e.preventDefault();
     const msgText = messageInput.value.trim();
     if (!msgText || !activeContact) return;
+
+    // Disable the send button to prevent multiple submissions
+    const sendButton = messageForm.querySelector('button');
+    const originalButtonText = sendButton.innerHTML;
+    sendButton.disabled = true;
+    sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
 
     const newMsg = {
       text: msgText,
@@ -168,57 +242,189 @@
     })
     .then(response => response.json())
     .then(data => {
+      // Re-enable the send button
+      sendButton.disabled = false;
+      sendButton.innerHTML = originalButtonText;
+      
       if (!data.success) {
         console.error('Message send failed:', data.error);
+        // Show error notification
+        showNotification('Failed to send message', 'error');
       }
     })
     .catch(error => {
       console.error('Error sending message:', error);
+      // Re-enable the send button
+      sendButton.disabled = false;
+      sendButton.innerHTML = originalButtonText;
+      // Show error notification
+      showNotification('Failed to send message', 'error');
     });
   });
+
+  // Show notification function
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+      notification.classList.add('notification-hide');
+      setTimeout(() => notification.remove(), 300);
+    }, 4000);
+  }
 
   // Periodically check for new messages
   function checkNewMessages() {
     if (activeContact) {
-      loadMessageHistory(activeContact)
-        .then(() => renderMessages(activeContact));
+      fetch(`backend/get_messages.php?contact=${encodeURIComponent(activeContact)}`)
+        .then(response => response.json())
+        .then(data => {
+          // Check if we have new messages
+          if (chatData[activeContact] && data.length > chatData[activeContact].length) {
+            // Get only new messages
+            const newMessages = data.slice(chatData[activeContact].length);
+            
+            // Add new messages to our data
+            chatData[activeContact] = data;
+            
+            // Add only the new messages to the UI with animation
+            newMessages.forEach(msg => {
+              const msgDiv = document.createElement('div');
+              msgDiv.className = `message ${msg.type} new-message`;
+              msgDiv.innerHTML = `
+                <div class="message-content">${msg.text}</div>
+                <div class="message-timestamp">
+                  <i class="far fa-clock"></i> ${msg.timestamp}
+                </div>
+              `;
+              messages.appendChild(msgDiv);
+            });
+            
+            // Scroll to bottom
+            messages.scrollTop = messages.scrollHeight;
+            
+            // Play sound if it's a received message
+            if (newMessages.some(m => m.type === 'received')) {
+              playMessageSound();
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Error checking new messages:', error);
+        });
     }
   }
 
-  // Set interval to check for new messages every 5 seconds
-  setInterval(checkNewMessages, 5000);
+  // Function to play message sound
+  function playMessageSound() {
+    const sound = new Audio('assets/message.mp3');
+    sound.volume = 0.3;
+    sound.play().catch(e => console.log('Could not play notification sound'));
+  }
+
+  // Set interval to check for new messages every 3 seconds
+  setInterval(checkNewMessages, 3000);
 
   // Search filter for friends list
   userSearch.addEventListener('input', () => {
     const filter = userSearch.value.toLowerCase();
     const contacts = contactsList.getElementsByClassName('contact-item');
+    
+    let hasResults = false;
+    
     Array.from(contacts).forEach(contact => {
       const name = contact.textContent.toLowerCase();
-      contact.style.display = name.includes(filter) ? '' : 'none';
+      const match = name.includes(filter);
+      contact.style.display = match ? '' : 'none';
+      if (match) hasResults = true;
     });
+    
+    // Show no results message if needed
+    const noResultsMsg = contactsList.querySelector('.no-results');
+    
+    if (!hasResults && filter !== '') {
+      if (!noResultsMsg) {
+        const noResults = document.createElement('div');
+        noResults.className = 'no-results';
+        noResults.innerHTML = `
+          <i class="fas fa-search"></i>
+          <p>No results found for "${filter}"</p>
+        `;
+        contactsList.appendChild(noResults);
+      }
+    } else if (noResultsMsg) {
+      noResultsMsg.remove();
+    }
   });
 
-  // Display current user's info
+  // Function to load and display current user info
   function loadUserInfo() {
-    fetch('backend/get_current_user.php')
-      .then(response => response.json())
+    fetch('backend/getCurrentUser.php')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
       .then(data => {
-        if (data.username) {
-          document.getElementById('usernameDisplay').textContent = data.username;
-          const initials = data.username.charAt(0).toUpperCase();
-          document.getElementById('userInitials').textContent = initials;
+        if (data.success) {
+          // Update the username display
+          const usernameDisplay = document.getElementById('usernameDisplay');
+          if (usernameDisplay) {
+            usernameDisplay.textContent = data.username;
+            usernameDisplay.title = `Logged in as ${data.username}`;
+          }
+          
+          // Set the first letter of username as avatar initial
+          const userInitials = document.getElementById('userInitials');
+          if (userInitials) {
+            userInitials.textContent = data.username.charAt(0).toUpperCase();
+          }
+          
+          console.log('Current user loaded:', data.username);
+        } else {
+          console.error('Not logged in');
+          // Redirect to login if not authenticated
+          window.location.href = 'login.html';
         }
       })
       .catch(error => {
         console.error('Error loading user info:', error);
+        // Show error notification
+        showNotification('Failed to load user info', 'error');
       });
   }
 
-  // Load friends and user info on page load
-  window.onload = () => {
-    loadFriends();
+  // Handle Enter key in message input
+  messageInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (messageInput.value.trim() !== '') {
+        messageForm.dispatchEvent(new Event('submit'));
+      }
+    }
+  });
+
+  // Initialize everything when the page loads
+  document.addEventListener('DOMContentLoaded', () => {
     loadUserInfo();
-  };
+    loadFriends();
+    
+    // Welcome animation
+    setTimeout(() => {
+      const welcomeMsg = document.querySelector('.welcome-message');
+      if (welcomeMsg) welcomeMsg.classList.add('show');
+    }, 300);
+  });
 </script>
 </body>
 </html>
